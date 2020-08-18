@@ -4,10 +4,31 @@ import sys
 
 class CPU:
     """Main CPU class."""
+    
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        # holds 256 bytes of memory
+        self.ram = [0] * 256
+        #  and 8 general-purpose registers
+        self.reg = [0, 0, 0, 0, 0, 0, 0, 0xf4]
+        self.pc = 0 
+
+        def ram_read(self, address):
+        """
+        Accept the address to read and return the value stored there.
+        address == Memory Address Register - address that is being read or written to.
+        """
+        return self.ram[address]
+
+    def ram_write(self, address, value):
+        """
+        Accept the value to write, and the address to write it to.
+        address == Memory Data Register - data that was read or the data to write.
+        value == Memory Address Register - address that is being read or written to.
+        """
+        self.ram[value] = address
+
 
     def load(self):
         """Load a program into memory."""
@@ -60,6 +81,28 @@ class CPU:
 
         print()
 
-    def run(self):
-        """Run the CPU."""
-        pass
+        def run(self):
+            """Run the CPU."""
+            halted = False
+            HALT = 1
+            LDI = 130  # Save a value in a register
+            PRINT = 71
+
+            while not halted:
+                instruction = self.ram[self.pc]
+
+                if instruction == HALT:
+                    halted = True
+                elif instruction == LDI:
+                    reg_num = self.ram[self.pc + 1]
+                    value = self.ram[self.pc + 2]
+                    self.reg[reg_num] = value
+                    self.pc += 3
+                elif instruction == PRINT:
+                    reg_num = self.ram[self.pc + 1]
+                    print(self.reg[reg_num])
+                    self.pc += 2
+                else:
+                    print('unknown instruction')
+
+
