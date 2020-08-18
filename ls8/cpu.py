@@ -4,7 +4,6 @@ import sys
 
 class CPU:
     """Main CPU class."""
-    
 
     def __init__(self):
         """Construct a new CPU."""
@@ -14,7 +13,7 @@ class CPU:
         self.reg = [0, 0, 0, 0, 0, 0, 0, 0xf4]
         self.pc = 0 
 
-        def ram_read(self, address):
+    def ram_read(self, address):
         """
         Accept the address to read and return the value stored there.
         address == Memory Address Register - address that is being read or written to.
@@ -81,28 +80,30 @@ class CPU:
 
         print()
 
-        def run(self):
-            """Run the CPU."""
-            halted = False
-            HALT = 1
-            LDI = 130  # Save a value in a register
-            PRINT = 71
+    def run(self):
+        """Run the CPU."""
+        halted = False
 
-            while not halted:
-                instruction = self.ram[self.pc]
+        # Operations we can perform:
+        HLT = 1
+        LDI = 0b10000010 # Save a value in a register
+        PRN = 0b01000111
 
-                if instruction == HALT:
-                    halted = True
-                elif instruction == LDI:
-                    reg_num = self.ram[self.pc + 1]
-                    value = self.ram[self.pc + 2]
-                    self.reg[reg_num] = value
-                    self.pc += 3
-                elif instruction == PRINT:
-                    reg_num = self.ram[self.pc + 1]
-                    print(self.reg[reg_num])
-                    self.pc += 2
-                else:
-                    print('unknown instruction')
+        while not halted:
+            instruction = self.ram[self.pc]
+
+            if instruction == HLT:
+                halted = True
+            elif instruction == LDI:
+                reg_num = self.ram[self.pc + 1]
+                value = self.ram[self.pc + 2]
+                self.reg[reg_num] = value
+                self.pc += 3
+            elif instruction == PRN:
+                reg_num = self.ram[self.pc + 1]
+                print(self.reg[reg_num])
+                self.pc += 2
+            else:
+                print('unknown instruction')
 
 
