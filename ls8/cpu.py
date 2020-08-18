@@ -29,26 +29,34 @@ class CPU:
         self.ram[value] = address
 
 
-    def load(self):
+    def load(self, fileName):
         """Load a program into memory."""
-
-        address = 0
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        try: 
+            address = 0
+
+            with open(fileName) as program:
+
+                for line in program:
+                    instruction = line.split('#')[0].strip()
+                    if instruction != '':
+                        self.ram[address] = int(instruction, 2)
+                        address += 1
+        except FileNotFoundError:
+            print('File not found')
+            sys.exit(2)
 
 
     def alu(self, op, reg_a, reg_b):
@@ -90,7 +98,7 @@ class CPU:
         PRN = 0b01000111
 
         while not halted:
-            instruction = self.ram[self.pc]
+            instruction = self.ram_read(self.pc)
 
             if instruction == HLT:
                 halted = True
