@@ -1,17 +1,31 @@
 """CPU functionality."""
 
 import sys
+      # Stack Pointer (R7) as per specs
+        # 0xf4 => code that correlates to address of start of stack in ram
+
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
+        self.halted = False
         # holds 256 bytes of memory
         self.ram = [0] * 256
         #  and 8 general-purpose registers
-        self.reg = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.reg = [0, 0, 0, 0, 0, 0, 0, 0xf4]
         self.pc = 0 
+
+        # Operations we can perform:
+        self.operations = {
+            0b00000001: self.handle_HLT,
+            0b10000010: self.handle_LDI,
+            0b01000111: self.handle_PRN,
+            0b10100010: self.handle_MUL,
+            0b01000101: self.handle_PUSH,
+            0b01000110: self.handle_POP
+        }
 
     def ram_read(self, address):
         """
@@ -81,56 +95,54 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        halted = False
 
-        # Stack Pointer (R7) as per specs
-        SP = 7
-        self.reg[SP] = 0xf4
-
-        # Operations we can perform:
-        HLT = 0b00000001
-        LDI = 0b10000010 # Save a value in a register
-        PRN = 0b01000111
-        MUL = 0b10100010
-        PUSH = 0b01000101
-        POP = 0b01000110 
-
-        while not halted:
+        while self.halted is False:
             instruction = self.ram_read(self.pc)
+            argumenent_a = self.ram_read(self.pc + 1)
+            argument_b = self.ram_read(self.pc + 2)
 
-            if instruction == HLT:
-                halted = True
-            elif instruction == LDI:
-                reg_index = self.ram[self.pc + 1]
-                value = self.ram[self.pc + 2]
-                self.reg[reg_index] = value
-                op_size = 3
-            elif instruction == PRN:
-                reg_index = self.ram[self.pc + 1]
-                print(self.reg[reg_index])
-                op_size = 2
-            elif instruction == MUL:
-                register_a = self.ram[self.pc + 1]
-                register_b = self.ram[self.pc + 2]
-                self.alu("MUL", register_a, register_b)
-                op_size = 3
-            elif instruction == PUSH:
-                reg_index = self.ram[self.pc + 1]
-                val = self.reg[reg_index]
-                self.reg[SP] -= 1
-                self.ram[self.reg[SP]] = val
-                op_size = 2
-                print(f'Pushing {val} at index {reg_index} and decrementing SP to {self.reg[SP]}')
-            elif instruction == POP:
-                print(f'Popping off {val} at index {reg_index} and incrementing SP to {self.reg[SP]}')
-                reg_index = self.ram[self.pc + 1]
-                val = self.reg[SP]
-                self.reg[reg_index] = val
-                self.reg[SP] += 1
-                op_size = 2
+            # shift numbers right by 6.. 
+            # will translate to number of arguments required for function
+            num_of_args = instruction >> 6
+            # move down to next instruction
+            self.pc += 1 + num_of_args
+
+            if num_of_args == 0:
+                self.operations[instruction]()
+            elif num_of_args == 1:
+                self.operations[instruction](argumenent_a)
             else:
-                print('unknown instruction')
+                self.operations[instruction](argumenent_a, argument_b)
             
-            self.pc += op_size
 
-        print(f'REGISTERS: {self.reg}')
+
+    def handle_HLT(self):
+        self.halted = True
+
+    def handle_LDI(self, index, value):
+        self.reg[index] = value
+
+    def handle_PRN(self, index):
+        print(self.reg[index])
+
+    def handle_MUL(self, register_a, register_b):
+        self.alu("MUL", register_a, register_b)
+
+    def handle_PUSH(self, register_index):
+        # print(f'Pushing {self.reg[register_index]} to address {self.reg[7]}')
+        # decrement pointer to hold different ram address
+        self.reg[7] -= 1
+        # write top-stack's value at address register is pointing to
+        self.ram_write(self.reg[7], self.reg[register_index])
+    
+    def handle_POP(self, register_index):
+        # value should be the value at the address stored in the stack pointer
+        value_to_pop = self.ram[self.reg[7]]
+        # write current-stack pointer's value at register
+        # current stack's value is a reference to an address in ram
+        self.reg[register_index] = value_to_pop
+        # increment pointer to hold different ram address
+        self.reg[7] += 1
+        # print(f'Popping last value ({value_to_pop}) into register {register_index}')
+
+
