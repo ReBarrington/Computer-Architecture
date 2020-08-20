@@ -17,6 +17,7 @@ class CPU:
 
         # Operations we can perform:
         self.operations = {
+            0b10100000: self.handle_ADD,
             0b00000001: self.handle_HLT,
             0b10000010: self.handle_LDI,
             0b01000111: self.handle_PRN,
@@ -103,8 +104,9 @@ class CPU:
         """Run the CPU."""
 
         while self.halted is False:
+            # self.trace()
             instruction = self.ram_read(self.pc)
-            argumenent_a = self.ram_read(self.pc + 1)
+            argument_a = self.ram_read(self.pc + 1)
             argument_b = self.ram_read(self.pc + 2)
 
             # shift numbers right by 6.. 
@@ -116,9 +118,9 @@ class CPU:
             if num_of_args == 0:
                 self.operations[instruction]()
             elif num_of_args == 1:
-                self.operations[instruction](argumenent_a)
+                self.operations[instruction](argument_a)
             else:
-                self.operations[instruction](argumenent_a, argument_b)   
+                self.operations[instruction](argument_a, argument_b)   
 
     def handle_HLT(self):
         self.halted = True
@@ -128,6 +130,9 @@ class CPU:
 
     def handle_PRN(self, register_index):
         print(self.reg[register_index])
+
+    def handle_ADD(self, register_a_index, register_b_index):
+        self.alu("ADD", register_a_index, register_b_index)
 
     def handle_MUL(self, register_a_index, register_b_index):
         self.alu("MUL", register_a_index, register_b_index)
@@ -150,13 +155,16 @@ class CPU:
         # print(f'Popping last value ({value_to_pop}) into register {register_index}')
 
     def handle_CALL(self, register_index):
+        # Calls a subroutine (function) at the address stored in the register.
         self.reg[7] -= 1
-        next_instruction = self.ram_read(self.pc)
-        # store next instruction at stack pointer
-        print(f'Storing next instruction ({next_instruction}) at SP (Index {self.reg[7]} of RAM)')
-        self.ram_write(self.reg[7], next_instruction)
+
+        # 1 - The address of the instruction directly after CALL is pushed onto the stack. This allows us to return to where we left off when the subroutine finishes executing.
+        next_instruction_address = self.pc
+        # print(f'Storing address of next instruction ({next_instruction_address}) at SP (Index {self.reg[7]} of RAM)')
+        self.ram_write(self.reg[7], next_instruction_address)
+
         # 2 - The PC is set to the address stored in the given register. We jump to that location in RAM and execute the first instruction in the subroutine. The PC can move forward or backwards from its current location.
-        self.pc = self.ram_read(self.reg[register_index])
+        self.handle_JMP(register_index)
 
     def handle_RET(self):
         # Return from subroutine.
@@ -170,6 +178,6 @@ class CPU:
 
     def handle_JMP(self, register_index):
         # Set the PC to the address stored in the given register.
-        print(f' Jumping from {self.pc}')
-        self.pc = self.ram_read(self.reg[register_index])
-        print(f' to {self.pc}')
+        # print(f' Jumping from {self.pc}')
+        self.pc = self.reg[register_index]
+        # print(f' to {self.pc}')
