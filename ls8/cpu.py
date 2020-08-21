@@ -28,6 +28,13 @@ class CPU:
             0b00010001: self.handle_RET,
             0b10100111: self.handle_CMP,
             0b01010100: self.handle_JMP,
+            0b01010101: self.handle_JEQ,
+            0b01010110: self.handle_JNE,
+            0b10101000: self.handle_AND,
+            0b10101010: self.handle_OR,
+            0b10101011: self.handle_XOR,
+            0b10101100: self.handle_SHL,
+            0b10101101: self.handle_SHR
         }
 
     def ram_read(self, address):
@@ -78,6 +85,21 @@ class CPU:
             else:
                 value = 0b00000100
             self.fl = value
+
+        # BITWISE OPERATORS: 
+        elif op == "AND":
+            self.reg[reg_a] = self.reg[reg_a] & self.reg[reg_b]
+        elif op == "OR":
+            self.reg[reg_a] = self.reg[reg_a] | self.reg[reg_b]
+        elif op == "XOR":
+            self.reg[reg_a] = self.reg[reg_a] ^ self.reg[reg_b]
+        elif op == "NOT":
+            self.reg[reg_a] = ~self.reg[reg_a]
+        elif op == "SHL":
+            self.reg[reg_a] = self.reg[reg_a] << self.reg[reg_b]
+        elif op == "SHR":
+            self.reg[reg_a] = self.reg[reg_a] >> self.reg[reg_b]
+        
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -178,6 +200,39 @@ class CPU:
 
     def handle_JMP(self, register_index):
         # Set the PC to the address stored in the given register.
-        # print(f' Jumping from {self.pc}')
         self.pc = self.reg[register_index]
-        # print(f' to {self.pc}')
+
+    def handle_JEQ(self, register_index):
+        # If equal flag is set (true), jump to the address stored in the given register.
+        # mask all but last number
+        if self.fl & 0b00000001 == 0b00000001:
+            self.handle_JMP(register_index)
+
+    def handle_JNE(self, register_index):
+        # If E flag is clear (false, 0), jump to the address stored in the given register.
+        # mask all but last number
+        if self.fl & 0b00000001 == 0b00000000:
+            self.handle_JMP(register_index)
+
+    def handle_AND(self, register_a_index, register_b_index):
+        self.alu("AND", register_a_index, register_b_index)
+    
+    def handle_OR(self, register_a_index, register_b_index):
+        self.alu("OR", register_a_index, register_b_index)
+
+    def handle_XOR(self, register_a_index, register_b_index):
+        # exclusive or
+        # only true if either one or the other is true, not both
+        self.alu("XOR", register_a_index, register_b_index)
+    
+    def handle_NOT(self, register_index):
+        # inverts each to opposite
+        self.alu("NOT", register_index, None)
+
+    def handle_SHL(self, register_a_index, num_of_bits):
+        # Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0.
+        self.alu("SHL", register_a_index, num_of_bits)
+
+    def handle_SHR (self, register_a_index, num_of_bits):
+        # Shift the value in registerA right by the number of bits specified in registerB, filling the low bits with 0.
+        self.alu("SHR", register_a_index, num_of_bits)
